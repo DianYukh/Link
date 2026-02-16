@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class FileReaderService {
-    private String processedData (RawFile rawFile) {
+    public String processedData (RawFile rawFile) {
         log.info("Start reading file: {}", rawFile.getFileName());
 
         String processed = rawFile.getObject().trim();

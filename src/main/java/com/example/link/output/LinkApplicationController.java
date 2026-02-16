@@ -20,7 +20,7 @@ public class LinkApplicationController {
     @PostMapping(value = "/addFile")
     public ResponseEntity<String> addFile(@RequestBody RawFile rawFile) {
         log.info(rawFile.getFileName());
-
+        String processedData = fileReaderService.processedData(rawFile);
         return ResponseEntity.ok("File is accepted");
     }
 
