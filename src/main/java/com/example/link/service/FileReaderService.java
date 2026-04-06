@@ -1,5 +1,6 @@
 package com.example.link.service;
 
+import com.example.link.model.dto.ParsingError;
 import com.example.link.model.dto.RawFile;
 import com.example.link.model.dto.Ring;
 import com.example.link.model.dto.RingsParsedFile;
@@ -11,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,14 +26,18 @@ public class FileReaderService {
 
             String content = extractTextFromDocs(rawFile);
             List<Ring> rings = parsRing(content);
-            log.info("Finished processing file: {}", rawFile.getOriginalFilename());
-            Map<String, Integer> countReplicasByCharacter = countReplicasByCharacter(rings);
-            return new RingsParsedFile(rawFile.getOriginalFilename(), rings, countReplicasByCharacter);
+            if (rings.isEmpty()) {
 
+                List<ParsingError> parsingErrors = Collections.singletonList(new ParsingError("NO_TEXT", "Error: not correct replicas"));
+
+                log.info("Finished processing file: {}", rawFile.getOriginalFilename());
+                Map<String, Integer> countReplicasByCharacter = countReplicasByCharacter(rings);
+                return new RingsParsedFile(rawFile.getOriginalFilename(), rings, countReplicasByCharacter, null);
+            }
 
         } catch (IOException e) {
             log.error(e.getMessage());
-            return new RingsParsedFile(rawFile.getOriginalFilename(), new ArrayList<>(), new HashMap<>());
+            return new RingsParsedFile(rawFile.getOriginalFilename(), new ArrayList<>(), new HashMap<>(), null);
         }
 
     }
@@ -59,7 +61,7 @@ public class FileReaderService {
         if (content == null || content.trim().isEmpty()) {
             return rings;
         }
-        Pattern ringCountPattern = Pattern.compile("(\\d{1,2}[:.](\\d{2}))\\s+([А-ЯЁа-яёA-Za-z]+)[:\\s]*(.+?)(?=\\d{1,2}[:.](\\d{2})\\s+[А-ЯЁа-яёA-Za-z]+[:\\s]|$)", Pattern.DOTALL);
+        Pattern ringCountPattern = Pattern.compile("(\\d{1,2}[:.](\\d{2}))[\\s\\t]+([А-ЯЁІЇЄҐа-яёіїєґA-Za-z]+)[:\\s\\t]*(.+?)(?=\\d{1,2}[:.](\\d{2})[\\s\\t]+[А-ЯЁІЇЄҐа-яёіїєґA-Za-z]+[:\\s\\t]|$)", Pattern.DOTALL);
         Matcher ringCountMatcher = ringCountPattern.matcher(content);
         log.info("Start parsing rings: {}", content);
 
@@ -93,6 +95,20 @@ public class FileReaderService {
         }
         log.info("Finished processing file: {}", processedRawText);
         return processedRawText.toString();
+    }
+
+    private RingsParsedFile parsRingValidator(String content) {
+        List<Ring> rings = new ArrayList<>();
+        List<String> errorUnparsedLines = new ArrayList<>();
+        String[] lines = content.split("\\r?\\n");
+        Pattern ringCountErrorPattern = Pattern.compile("(\\d{1,2}[:.](\\d{2}))[\\s\\t]+([А-ЯЁІЇЄҐа-яёіїєґA-Za-z]+)[:\\s\\t]*(.+?)(?=\\d{1,2}[:.](\\d{2})[\\s\\t]+[А-ЯЁІЇЄҐа-яёіїєґA-Za-z]+[:\\s\\t]|$)");
+
+        for (String line : lines) {
+            if (line.trim().isEmpty()) {
+                continue;
+            }
+            Matcher ringCountErrorMatcher = ringCountErrorPattern.matcher(line);
+        }
     }
 
 
